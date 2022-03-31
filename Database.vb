@@ -9,6 +9,7 @@ Module Database
 
     Public loggedIn As Boolean = False
     Public MyUser As User
+    Public MyTeam As Team
 
     Public Function DbConnect() As Boolean
         Try
@@ -58,6 +59,13 @@ Module Database
                         AvailSun = ConvertAvailability(rs("Sun"))
                     End If
                 End With
+            Else
+                Username = "System"
+                DiscordTag = ""
+                ProfilePic = "https://www.pngmart.com/files/21/Admin-Profile-PNG-Isolated-Photo.png"
+                TeamID = "-1"
+                IsModerator = True
+                IsAdmin = True
             End If
         End Sub
     End Class
@@ -97,7 +105,87 @@ Module Database
                 MsgBox("Notification sent!")
             End If
         End Sub
+
+        Public Shared Sub Delete(ThisID As Integer)
+            If DbConnect() Then
+                Dim SQLCmd As New OleDbCommand
+                With SQLCmd
+                    .Connection = cn
+                    .CommandText = "DELETE FROM Notification WHERE NotifID = @NotifID"
+                    .Parameters.AddWithValue("@NotifID", ThisID)
+                    .ExecuteNonQuery()
+                End With
+            End If
+        End Sub
+
     End Class
+
+    Public Class Match
+        Public ID As Integer
+        Public OrangeTeam As Team
+        Public BlueTeam As Team
+        Public Time As String
+        Public OrangeScore As Integer
+        Public BlueScore As Integer
+        Public Season As Integer
+        Public Region As String
+        Public Casters(2) As User
+
+        Public Shared Function GetExisting(NewID As Integer) As Match
+            'Fill the rest of the data based on the ID
+            Dim ReturnMatch As New Match(Nothing, Nothing, Nothing, Nothing, Nothing)
+            If DbConnect() Then
+                Dim SQLCmd As New OleDbCommand
+                With SQLCmd
+                    .Connection = cn
+                    .CommandText = "Select * From Matches where MatchID = @MatchID"
+                    .Parameters.AddWithValue("@MatchID", NewID)
+                    Dim rs As OleDbDataReader = SQLCmd.ExecuteReader
+                    If rs.Read Then
+                        ReturnMatch.OrangeTeam = New Team(rs("OrangeTeam"))
+                        ReturnMatch.BlueTeam = New Team(rs("BlueTeam"))
+                        ReturnMatch.OrangeScore = rs("OrangeScore")
+                        ReturnMatch.BlueScore = rs("BlueScore")
+                        ReturnMatch.Time = rs("TimeSet")
+                        ReturnMatch.Season = rs("SeasonNumber")
+                        ReturnMatch.Region = rs("Region")
+                    End If
+                End With
+            End If
+            Return ReturnMatch
+        End Function
+
+        Sub New(NewOrange As Integer, NewBlue As Integer, NewTime As String, NewRegion As String, NewSeason As Integer)
+            OrangeTeam = New Team(NewOrange)
+            BlueTeam = New Team(NewBlue)
+            Time = NewTime
+            Region = NewRegion
+            Season = NewSeason
+        End Sub
+
+        Public Sub Submit()
+            If DbConnect() Then
+                'Update matches table
+                Dim SQLCmd As New OleDbCommand
+                With SQLCmd
+                    .Connection = cn
+                    .CommandText = "Insert into Matches (OrangeScore, BlueScore, OrangeTeam, BlueTeam, TimeSet, Region, SeasonNumber) VALUES (-1, -1, @OrangeTeam, @BlueTeam, @TimeSet, @Region, @Season)"
+                    .Parameters.AddWithValue("@OrangeTeam", OrangeTeam.ID)
+                    .Parameters.AddWithValue("@BlueTeam", BlueTeam.ID)
+                    .Parameters.AddWithValue("@TimeSet", Time)
+                    .Parameters.AddWithValue("@Region", Region)
+                    .Parameters.AddWithValue("@Season", Season)
+                    .ExecuteNonQuery()
+                End With
+            End If
+        End Sub
+
+    End Class
+
+    'Create a notification for each team captain
+    'For Each ThisTeam As Team In {OrangeTeam, BlueTeam}
+    '    Dim noti As New Notification(Nothing, "WeeklyMatch", Time, New User(ThisTeam.Captain), New User(-1), ID)
+    'Next
 
     Public Class Team
         Public ID As Integer
@@ -173,6 +261,190 @@ Module Database
             End If
         End Function
 
+        Public Function GetUserPosition(PlayerID As Integer) As String
+            'Returns the position of the user ID given
+            If Captain = PlayerID Then
+                Return "Captain"
+            ElseIf Player2 = PlayerID Then
+                Return "Player2"
+            ElseIf Player3 = PlayerID Then
+                Return "Player3"
+            ElseIf Player4 = PlayerID Then
+                Return "Player4"
+            ElseIf Sub1 = PlayerID Then
+                Return "Sub1"
+            ElseIf Sub2 = PlayerID Then
+                Return "Sub2"
+            Else
+                Return Nothing
+            End If
+        End Function
+
+        Public Sub Delete()
+            If DbConnect() Then
+                Dim SQLCmd As New OleDbCommand
+                With SQLCmd
+                    .Connection = cn
+                    'Update each players teamID to be -1
+                    If Player2 <> 0 Then
+                        .CommandText = "Update Users SET TeamID = -1 WHERE UserID = @UserID"
+                        .Parameters.AddWithValue("@UserID", Player2)
+                        .ExecuteNonQuery()
+                    End If
+                    If Player3 <> 0 Then
+                        .CommandText = "Update Users SET TeamID = -1 WHERE UserID = @UserID"
+                        .Parameters.AddWithValue("@UserID", Player3)
+                        .ExecuteNonQuery()
+                    End If
+                    If Player4 <> 0 Then
+                        .CommandText = "Update Users SET TeamID = -1 WHERE UserID = @UserID"
+                        .Parameters.AddWithValue("@UserID", Player4)
+                        .ExecuteNonQuery()
+                    End If
+                    If Sub1 <> 0 Then
+                        .CommandText = "Update Users SET TeamID = -1 WHERE UserID = @UserID"
+                        .Parameters.AddWithValue("@UserID", Sub1)
+                    End If
+                    If Sub2 <> 0 Then
+                        .CommandText = "Update Users SET TeamID = -1 WHERE UserID = @UserID"
+                        .Parameters.AddWithValue("@UserID", Sub2)
+                    End If
+
+                    'Delete the team
+                    .CommandText = "DELETE FROM Team Where TeamID = @TeamID"
+                    .Parameters.AddWithValue("@TeamID", MyUser.TeamID)
+                    .ExecuteNonQuery()
+                End With
+            End If
+        End Sub
+
+        Public Sub KickPlayer(PlayerID As Integer)
+            If DbConnect() Then
+                Dim playerpos As String = GetUserPosition(PlayerID)
+                Dim SQLCmd As New OleDbCommand
+                With SQLCmd
+                    'Update Team database to remove player
+                    cn.Open()
+                    .Connection = cn
+                    .CommandText = "UPDATE Team SET " & playerpos & " = 0 WHERE TeamID = @TeamID"
+                    .Parameters.AddWithValue("@TeamID", ID)
+                    .ExecuteNonQuery()
+                End With
+
+                Dim SQLCmd2 As New OleDbCommand
+                With SQLCmd2
+                    .Connection = cn
+                    'Update the players teamID to be -1
+                    .CommandText = "Update Users SET TeamID = -1 WHERE UserID = @UserID"
+                    .Parameters.AddWithValue("@UserID", PlayerID)
+                    .ExecuteNonQuery()
+                End With
+
+                MsgBox("Player " & GetUsername(PlayerID) & " was kicked from the team.")
+                RefreshUserInfo()
+            End If
+        End Sub
+
+        Public Function GetAvailability(day As String) As String()
+            'Add all users in team to a list as user class, to get availabilities
+            Dim players As List(Of User) = New List(Of User)
+            players.Add(New User(Captain))
+            If Player2 <> 0 Then
+                players.Add(New User(Player2))
+            End If
+            If Player3 <> 0 Then
+                players.Add(New User(Player3))
+            End If
+            If Player4 <> 0 Then
+                players.Add(New User(Player4))
+            End If
+            If Sub1 <> 0 Then
+                players.Add(New User(Sub1))
+            End If
+            If Sub2 <> 0 Then
+                players.Add(New User(Sub2))
+            End If
+
+            Dim availabilities() As String = {"0", "24", "0-24"}
+            For Each thisPlayer As User In players
+                'Start time (array num 0)
+                'only replace the number if it is higher than the previous. This will make sure at the end, the availability is only within the limits of every player.
+                If day = "Mon" Then
+                    If availabilities(0) < thisPlayer.AvailMon(0) Then
+                        availabilities(0) = thisPlayer.AvailMon(0)
+                    End If
+                    If availabilities(1) > thisPlayer.AvailMon(1) Then
+                        availabilities(1) = thisPlayer.AvailMon(1)
+                    End If
+                ElseIf day = "Tue" Then
+                    If availabilities(0) < thisPlayer.AvailTue(0) Then
+                        availabilities(0) = thisPlayer.AvailTue(0)
+                    End If
+                    If availabilities(1) > thisPlayer.AvailTue(1) Then
+                        availabilities(1) = thisPlayer.AvailTue(1)
+                    End If
+                ElseIf day = "Wed" Then
+                    If availabilities(0) < thisPlayer.AvailWed(0) Then
+                        availabilities(0) = thisPlayer.AvailWed(0)
+                    End If
+                    If availabilities(1) > thisPlayer.AvailWed(1) Then
+                        availabilities(1) = thisPlayer.AvailWed(1)
+                    End If
+                ElseIf day = "Thu" Then
+                    If availabilities(0) < thisPlayer.AvailThu(0) Then
+                        availabilities(0) = thisPlayer.AvailThu(0)
+                    End If
+                    If availabilities(1) > thisPlayer.AvailThu(1) Then
+                        availabilities(1) = thisPlayer.AvailThu(1)
+                    End If
+                ElseIf day = "Fri" Then
+                    If availabilities(0) < thisPlayer.AvailFri(0) Then
+                        availabilities(0) = thisPlayer.AvailFri(0)
+                    End If
+                    If availabilities(1) > thisPlayer.AvailFri(1) Then
+                        availabilities(1) = thisPlayer.AvailFri(1)
+                    End If
+                ElseIf day = "Sat" Then
+                    If availabilities(0) < thisPlayer.AvailSat(0) Then
+                        availabilities(0) = thisPlayer.AvailSat(0)
+                    End If
+                    If availabilities(1) > thisPlayer.AvailSat(1) Then
+                        availabilities(1) = thisPlayer.AvailSat(1)
+                    End If
+                ElseIf day = "Sun" Then
+                    If availabilities(0) < thisPlayer.AvailSun(0) Then
+                        availabilities(0) = thisPlayer.AvailSun(0)
+                    End If
+                    If availabilities(1) > thisPlayer.AvailSun(1) Then
+                        availabilities(1) = thisPlayer.AvailSun(1)
+                    End If
+                End If
+            Next
+
+            availabilities(2) = availabilities(0) & "-" & availabilities(1)
+            Return availabilities
+        End Function
+
+        Public Function GetTeamAvailability() As List(Of String)
+            'Returns all the availabilities as list of string
+            Dim ReturnValues As List(Of String)
+            For Each Day As String In {"AvailMon", "AvailTue", "AvailWed", "AvailThu", "AvailFri", "AvailSat", "AvailSun"}
+                If DbConnect() Then
+                    Dim SQLCmd As New OleDbCommand
+                    With SQLCmd
+                        'Update Team database to remove player
+                        .Connection = cn
+                        .CommandText = "Select * From Team Where TeamID = @TeamID"
+                        .Parameters.AddWithValue("@TeamID", ID)
+                        Dim rs As OleDbDataReader = .ExecuteReader
+                        While rs.Read
+                            ReturnValues.Add(rs(Day))
+                        End While
+                    End With
+                End If
+            Next
+            Return ReturnValues
+        End Function
     End Class
 
     Public Function Login(username As String, Pass As String) As Boolean
@@ -189,6 +461,10 @@ Module Database
                     If rs("Pass") = Pass Then
                         'Case: Pass matches username
                         MyUser = New User(rs("UserID"))
+                        If MyUser.TeamID <> -1 Then
+                            Dim MyTeamID As Integer = MyUser.TeamID
+                            MyTeam = New Team(MyTeamID)
+                        End If
                         loggedIn = True
                     Else
                         Return False
@@ -200,6 +476,9 @@ Module Database
             End With
         End If
     End Function
+
+
+
 
     Public Sub RefreshUserInfo()
         FormMain.UpdateUserInfo()
@@ -246,19 +525,23 @@ Module Database
     End Function
 
     Public Function GetProfilePicture(userID As Integer) As String
-        If DbConnect() Then
-            Dim SQLCmd As New OleDbCommand
-            With SQLCmd
-                .Connection = cn
-                .CommandText = "Select * From Users where UserID = @UserID"
-                .Parameters.AddWithValue("@UserID", userID)
-                Dim rs As OleDbDataReader = SQLCmd.ExecuteReader
-                If rs.Read Then
-                    Return rs("ProfilePicture")
-                End If
-            End With
+        Try
+            If DbConnect() Then
+                Dim SQLCmd As New OleDbCommand
+                With SQLCmd
+                    .Connection = cn
+                    .CommandText = "Select * From Users where UserID = @UserID"
+                    .Parameters.AddWithValue("@UserID", userID)
+                    Dim rs As OleDbDataReader = SQLCmd.ExecuteReader
+                    If rs.Read Then
+                        Return rs("ProfilePicture")
+                    End If
+                End With
+                Return defaultProfilePicture
+            End If
+        Catch ex As Exception
             Return defaultProfilePicture
-        End If
+        End Try
     End Function
 
     Public Function GetUsername(userID As Integer) As String
@@ -315,6 +598,25 @@ Module Database
                 .Parameters.AddWithValue("@UserID", MyUser.ID)
                 .ExecuteNonQuery()
             End With
+
+            'Update team availability
+            If MyUser.TeamID <> -1 Then
+                Dim SQLCmd2 As New OleDbCommand
+                With SQLCmd2
+                    .Connection = cn
+                    .CommandText = "Update Team Set AvailMon = @Mon, AvailTue = @Tue, AvailWed = @Wed, AvailThu = @Thu, AvailFri = @Fri, AvailSat = @Sat, AvailSun = @Sun WHERE TeamID = @TeamID"
+                    .Parameters.AddWithValue("@Mon", MyTeam.GetAvailability("Mon")(2))
+                    .Parameters.AddWithValue("@Tue", MyTeam.GetAvailability("Tue")(2))
+                    .Parameters.AddWithValue("@Wed", MyTeam.GetAvailability("Wed")(2))
+                    .Parameters.AddWithValue("@Thu", MyTeam.GetAvailability("Thu")(2))
+                    .Parameters.AddWithValue("@Fri", MyTeam.GetAvailability("Fri")(2))
+                    .Parameters.AddWithValue("@Sat", MyTeam.GetAvailability("Sat")(2))
+                    .Parameters.AddWithValue("@Sun", MyTeam.GetAvailability("Sun")(2))
+                    .Parameters.AddWithValue("@TeamID", MyTeam.ID)
+                    .ExecuteNonQuery()
+                End With
+            End If
+
         End If
 
     End Function

@@ -92,9 +92,44 @@ Public Class FormMain
                             If MyUser.IsModerator = False Then
                                 DataGridMatches.Columns.Item(Caster.Index).Visible = False
                             End If
+
+                            'If the user is an admin, show the admin panel
+                            If MyUser.IsAdmin = True Then
+                                btnAdminPanel.Show()
+                            End If
+
+                            'If the user is a captain, show the kick buttons
+                            If MyTeam.Captain = MyUser.ID Then
+                                If lblPlayer2.Text <> "" Then
+                                    btnKickPlayer2.Show()
+                                End If
+                                If lblPlayer3.Text <> "" Then
+                                    btnKickPlayer3.Show()
+                                End If
+                                If lblPlayer4.Text <> "" Then
+                                    btnKickPlayer4.Show()
+                                End If
+                                If lblSub1.Text <> "" Then
+                                    btnKickSub1.Show()
+                                End If
+                                If lblSub2.Text <> "" Then
+                                    btnKickSub2.Show()
+                                End If
+                            End If
+
+                            'Update Team availability
+                            listAvail.Items.Clear()
+                            Dim allAvail = MyTeam.GetTeamAvailability
+                            listAvail.Items.Add("M: " & allAvail(0))
+                            listAvail.Items.Add("T: " & allAvail(1))
+                            listAvail.Items.Add("W: " & allAvail(2))
+                            listAvail.Items.Add("T: " & allAvail(3))
+                            listAvail.Items.Add("F: " & allAvail(4))
+                            listAvail.Items.Add("S: " & allAvail(5))
+                            listAvail.Items.Add("S: " & allAvail(6))
                         End If
-                        rs.Close()
-                        cn.Close()
+                        'rs.Close()
+                        'cn.Close()
                     End With
                 End If
             End If
@@ -133,13 +168,16 @@ Public Class FormMain
             If leaveTeam = True Then
 
                 If teamCaptain = True Then
-                    With SQLCmd
-                        .Connection = cn
-                        .CommandText = "Delete From Team WHERE TeamID = @TeamID"
-                        .Parameters.AddWithValue("@TeamID", MyUser.TeamID)
-                    End With
+                    MyTeam.Delete()
                 Else
                     'See what position the UserID is in, then remove the userID from that column.
+                    With SQLCmd
+                        .Connection = cn
+                        .CommandText = "Update Team SET " & MyTeam.GetUserPosition(MyUser.ID) & " = 0 WHERE TeamID = @TeamID"
+                        .Parameters.AddWithValue("@TeamID", MyUser.TeamID)
+                        .ExecuteNonQuery()
+                        MsgBox("Successfully left the team.")
+                    End With
                 End If
             End If
 
@@ -246,12 +284,13 @@ Public Class FormMain
     End Sub
 
     Private Sub btnRefreshLadder_Click(sender As Object, e As EventArgs) Handles btnRefreshLadder.Click
+        DataGridLadder.Rows.Clear()
 
         If DbConnect() Then
             Dim SQLCmd As New OleDbCommand
             With SQLCmd
                 .Connection = cn
-                .CommandText = "Select * From Team"
+                .CommandText = "Select * From Team ORDER BY Ranking DESC"
                 Dim rs As OleDbDataReader = .ExecuteReader
                 Do Until rs.Read = False
                     Dim row As String() = New String() {rs("Ranking"), CalculateRank(rs("Ranking")), rs("TeamName")}
@@ -467,5 +506,37 @@ Public Class FormMain
         Dim teamID As Integer = Team.GetID(listRecruitingTeams.SelectedItems(0).Text)
         Dim openTeam As New teamProfile(teamID)
         openTeam.ShowDialog()
+    End Sub
+
+    Private Sub topPanel_Paint(sender As Object, e As PaintEventArgs) Handles topPanel.Paint
+
+    End Sub
+
+    Private Sub btnKickPlayer2_Click(sender As Object, e As EventArgs) Handles btnKickPlayer2.Click
+        MyTeam.KickPlayer(MyTeam.Player2)
+    End Sub
+
+    Private Sub btnKickPlayer3_Click(sender As Object, e As EventArgs) Handles btnKickPlayer3.Click
+        MyTeam.KickPlayer(MyTeam.Player3)
+    End Sub
+
+    Private Sub btnKickPlayer4_Click(sender As Object, e As EventArgs) Handles btnKickPlayer4.Click
+        MyTeam.KickPlayer(MyTeam.Player4)
+    End Sub
+
+    Private Sub btnKickSub1_Click(sender As Object, e As EventArgs) Handles btnKickSub1.Click
+        MyTeam.KickPlayer(MyTeam.Sub1)
+    End Sub
+
+    Private Sub btnKickSub2_Click(sender As Object, e As EventArgs) Handles btnKickSub2.Click
+        MyTeam.KickPlayer(MyTeam.Sub2)
+    End Sub
+
+    Private Sub GroupBox3_Enter(sender As Object, e As EventArgs) Handles GroupBox3.Enter
+
+    End Sub
+
+    Private Sub btnAdminPanel_Click(sender As Object, e As EventArgs) Handles btnAdminPanel.Click
+        AdminPanel.Show()
     End Sub
 End Class

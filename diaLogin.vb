@@ -23,18 +23,22 @@ Public Class diaLogin
     End Sub
 
     Private Sub Cancel_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Cancel_Button.Click
-        If MyUser.ID = Nothing = False Then
-            MyUser.TeamID = -1
-            MyUser.Username = Nothing
-            loggedIn = False
-            MyUser.IsAdmin = False
-            MyUser.IsModerator = False
-            My.Settings.username = Nothing
-            My.Settings.password = Nothing
-            Me.DialogResult = System.Windows.Forms.DialogResult.Cancel
+        Try
+            If MyUser.ID = Nothing = False Then
+                MyUser.TeamID = -1
+                MyUser.Username = Nothing
+                loggedIn = False
+                MyUser.IsAdmin = False
+                MyUser.IsModerator = False
+                My.Settings.username = Nothing
+                My.Settings.password = Nothing
+                Me.DialogResult = System.Windows.Forms.DialogResult.Cancel
+                Application.Exit()
+                Me.Close()
+            End If
+        Catch Ex As Exception
             Application.Exit()
-            Me.Close()
-        End If
+        End Try
     End Sub
 
     Private Sub CreateAccount_Button_Click(sender As Object, e As EventArgs) Handles CreateAccount_Button.Click

@@ -17,9 +17,30 @@ Public Class diaNotifications
 
     Private Sub diaNotifications_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
-        'Load the notifications into the DataGridView.
+        'Clear notifications
+        datagridNotifications.Rows.Clear()
+
         Notifications = New List(Of Notification)
 
+        If MyTeam.Captain = MyUser.ID Then
+            'Insert notifications for each weekly match with a TimeSet of -1
+            If DbConnect() Then
+                Dim SQLCmd As New OleDbCommand
+                With SQLCmd
+                    .Connection = cn
+                    .CommandText = "Select * From Matches Where TimeSet = @TimeSet AND (OrangeTeam = @TeamID OR BlueTeam = @TeamID)"
+                    .Parameters.AddWithValue("@TimeSet", -1)
+                    .Parameters.AddWithValue("@TeamID", MyTeam.ID)
+                    Dim rs As OleDbDataReader = SQLCmd.ExecuteReader
+                    Do Until rs.Read = False
+                        Dim noti As New Notification(Nothing, "WeeklyMatch", "Weekly", MyUser, New User(-1), rs("MatchID"))
+                        Notifications.Add(noti)
+                    Loop
+                End With
+            End If
+        End If
+
+        'Load the notifications into the DataGridView.
         If DbConnect() Then
             Dim SQLCmd As New OleDbCommand
             With SQLCmd
@@ -27,12 +48,10 @@ Public Class diaNotifications
                 .CommandText = "Select * From Notification Where RecipientID = @RecipientID"
                 .Parameters.AddWithValue("@RecipientID", MyUser.ID)
                 Dim rs As OleDbDataReader = SQLCmd.ExecuteReader
-                If rs.Read Then
-                    Do Until rs.Read = False
-                        Dim noti As New Notification(rs("NotifID"), rs("NotifiType"), rs("TimeSent"), New User(rs("RecipientID")), New User(rs("SenderID")), rs("MatchID"))
-                        Notifications.Add(noti)
-                    Loop
-                End If
+                Do Until rs.Read = False
+                    Dim noti As New Notification(rs("NotifID"), rs("NotifiType"), rs("TimeSent"), New User(rs("RecipientID")), New User(rs("SenderID")), rs("MatchID"))
+                    Notifications.Add(noti)
+                Loop
             End With
         End If
 
@@ -58,6 +77,10 @@ Public Class diaNotifications
             ElseIf Noti.Type = "TeamJoinRequest" Then
                 text = Noti.Sender.Username & "(" & Noti.Sender.DiscordTag & ") is requesting to join your team!"
                 btnText = "Review"
+            ElseIf Noti.Type = "WeeklyMatch" Then
+                Dim ThisMatch As Match = Match.GetExisting(Noti.MatchID)
+                text = "Your weekly match is ready! " & ThisMatch.OrangeTeam.Name & " vs " & ThisMatch.BlueTeam.Name
+                btnText = "Play"
             Else
                 Dim x() As String
                 x = Noti.Type.Split
@@ -101,9 +124,17 @@ Public Class diaNotifications
             Dim selectedNoti As Notification = Notifications(e.RowIndex)
             'TeamJoinRequest
             If selectedNoti.Type = "TeamJoinRequest" Then
-                Dim openPlayer As New playerProfile(selectedNoti.Sender.ID, True)
+                Dim openPlayer As New playerProfile(selectedNoti.Sender.ID, True, selectedNoti.ID)
                 openPlayer.ShowDialog()
             End If
         End If
+    End Sub
+
+    Private Sub Label15_Click(sender As Object, e As EventArgs) Handles Label15.Click
+
+    End Sub
+
+    Private Sub topPanel_Paint(sender As Object, e As PaintEventArgs) Handles topPanel.Paint
+
     End Sub
 End Class

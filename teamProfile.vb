@@ -128,4 +128,8 @@ Public Class teamProfile
         Dim x As New Notification(Nothing, "TeamJoinRequest", DateTime.Now.ToLongDateString, capt, MyUser)
         Notification.Send(x)
     End Sub
+
+    Private Sub teamProfile_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+
+    End Sub
 End Class

@@ -27,7 +27,7 @@ Partial Class teamProfile
         Me.lblTopText = New System.Windows.Forms.Label()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.listRecentMatches = New System.Windows.Forms.ListBox()
-        Me.listParticipation = New System.Windows.Forms.ListBox()
+        Me.listAvail = New System.Windows.Forms.ListBox()
         Me.GroupBox2 = New System.Windows.Forms.GroupBox()
         Me.lblSub2 = New System.Windows.Forms.LinkLabel()
         Me.lblSub1 = New System.Windows.Forms.LinkLabel()
@@ -117,15 +117,15 @@ Partial Class teamProfile
         Me.listRecentMatches.Size = New System.Drawing.Size(168, 108)
         Me.listRecentMatches.TabIndex = 19
         '
-        'listParticipation
+        'listAvail
         '
-        Me.listParticipation.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.listParticipation.FormattingEnabled = True
-        Me.listParticipation.ItemHeight = 16
-        Me.listParticipation.Location = New System.Drawing.Point(16, 290)
-        Me.listParticipation.Name = "listParticipation"
-        Me.listParticipation.Size = New System.Drawing.Size(155, 84)
-        Me.listParticipation.TabIndex = 18
+        Me.listAvail.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.listAvail.FormattingEnabled = True
+        Me.listAvail.ItemHeight = 16
+        Me.listAvail.Location = New System.Drawing.Point(16, 290)
+        Me.listAvail.Name = "listAvail"
+        Me.listAvail.Size = New System.Drawing.Size(155, 84)
+        Me.listAvail.TabIndex = 18
         '
         'GroupBox2
         '
@@ -350,11 +350,11 @@ Partial Class teamProfile
         '
         Me.Label2.AutoSize = True
         Me.Label2.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label2.Location = New System.Drawing.Point(56, 273)
+        Me.Label2.Location = New System.Drawing.Point(47, 273)
         Me.Label2.Name = "Label2"
-        Me.Label2.Size = New System.Drawing.Size(63, 16)
+        Me.Label2.Size = New System.Drawing.Size(89, 16)
         Me.Label2.TabIndex = 12
-        Me.Label2.Text = "Medals:"
+        Me.Label2.Text = "Availability:"
         '
         'lblTeamName
         '
@@ -406,7 +406,7 @@ Partial Class teamProfile
         Me.Controls.Add(Me.GroupBox3)
         Me.Controls.Add(Me.Label3)
         Me.Controls.Add(Me.listRecentMatches)
-        Me.Controls.Add(Me.listParticipation)
+        Me.Controls.Add(Me.listAvail)
         Me.Controls.Add(Me.GroupBox2)
         Me.Controls.Add(Me.GroupBox1)
         Me.Controls.Add(Me.picTeamRank)
@@ -448,7 +448,7 @@ Partial Class teamProfile
     Friend WithEvents lblTopText As Label
     Friend WithEvents Label3 As Label
     Friend WithEvents listRecentMatches As ListBox
-    Friend WithEvents listParticipation As ListBox
+    Friend WithEvents listAvail As ListBox
     Friend WithEvents GroupBox2 As GroupBox
     Friend WithEvents lblSub2 As LinkLabel
     Friend WithEvents lblSub1 As LinkLabel

@@ -2,7 +2,7 @@
 
     Dim player As User
 
-    Sub New(playerID As Integer, Optional requestingJoin As Boolean = False)
+    Sub New(playerID As Integer, Optional requestingJoin As Boolean = False, Optional NotifID As Integer = Nothing)
         ' This call is required by the designer.
         InitializeComponent()
 
@@ -26,9 +26,6 @@
             btnAccept.Hide()
             btnDecline.Hide()
         End If
-
-
-
     End Sub
 
 
@@ -87,8 +84,13 @@
                     'Remove notification
                     With sqlcmd3
                         .Connection = cn
-                        .CommandText = "DELETE * From Notification WHERE NotifiType = TeamJoinRequest AND SenderID = @PlayerID"
+                        .CommandText = "Select * From Notification WHERE NotifiType = @TeamJoinRequest AND SenderID = @PlayerID"
+                        .Parameters.AddWithValue("@TeamJoinRequest", "TeamJoinRequest")
                         .Parameters.AddWithValue("@PlayerID", player.ID)
+                        Dim rs As OleDb.OleDbDataReader = .ExecuteReader
+                        If rs.Read Then
+                            Notification.Delete(rs("NotifID"))
+                        End If
                     End With
                 End If
             Catch ex As Exception
@@ -97,10 +99,20 @@
         Else
             MsgBox("Error: User is already in a team or there are no empty slots.")
         End If
+
+        RefreshUserInfo()
         Me.Close()
     End Sub
 
     Private Sub topPanel_Paint(sender As Object, e As PaintEventArgs) Handles topPanel.Paint
+
+    End Sub
+
+    Private Sub btnDecline_Click(sender As Object, e As EventArgs) Handles btnDecline.Click
+
+    End Sub
+
+    Private Sub playerProfile_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
     End Sub
 End Class
